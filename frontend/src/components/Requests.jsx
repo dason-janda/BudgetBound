@@ -39,11 +39,11 @@ const Requests = () => {
 
     const addRequest = async (newRequestData) => {
         //capture dates and budget for hotel lookup and final price calculations later
-        setSearchParams({
+        const newParams = {
             depart: newRequestData.depart,
             ret: newRequestData.ret,
             budget: newRequestData.budget
-        });
+        };
 
         setSearchParams(newParams);
         sessionStorage.setItem('budgetBound_params', JSON.stringify(newParams));
@@ -55,10 +55,6 @@ const Requests = () => {
             console.error("Error adding request", error);
         }
     };
-
-    useEffect(() => {
-        fetchRequests();
-    }, []);
 
     const formatDuration = (minutes) => {
         if (!minutes) return "N/A";
