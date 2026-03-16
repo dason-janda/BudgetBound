@@ -20,7 +20,6 @@ def lookupRequest(airportCode: str, max_price: int, depart: str, ret: str):
     response = search.json()
 
     flight_results = []
-    print(response)
 
     if "destinations" in response:
             for item in response["destinations"]:
@@ -35,7 +34,10 @@ def lookupRequest(airportCode: str, max_price: int, depart: str, ret: str):
                     "stops": item.get("number_of_stops") 
                 }
                 flight_results.append(destination)
-                    
+    
+    if len(flight_results) == 0:
+            print("Flight lookup failed")
+
     return flight_results
 
 def hotelSearch(destination: str, max_price: int, depart: int, ret: int):
@@ -59,8 +61,6 @@ def hotelSearch(destination: str, max_price: int, depart: int, ret: int):
     try:
         search = requests.get("https://serpapi.com/search", params=params)
         results = search.json()
-
-        print(results)
         
         hotels = []
 

@@ -71,6 +71,9 @@ def getDrivingDestinations(startLocation: str):
                 "transport_mode": "car"
             })
 
+        if len(drivingDestinations) == 0:
+            print("Drive lookup failed")
+
     return drivingDestinations
 
 def getNearestAirport(cityName):

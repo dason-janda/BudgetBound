@@ -99,9 +99,11 @@ const Requests = () => {
                     {/* drive results */}
                     <div className="layout-column">
                         <h3 className="column-header">Drives</h3>
-                        <div className="card-grid">
-                            {Array.isArray(drives) && drives.length > 0 ? (
-                                drives.map((drive, index) => {
+
+                        {/* Display no drive message if nothing in array */}
+                        {Array.isArray(drives) && drives.length > 0 ? (
+                            <div className="card-grid">
+                                {drives.map((drive, index) => {
                                     const isSelected = selectedTrips.some(t => t.id === `drive-${drive.city_name}`);
 
                                     return (
@@ -125,21 +127,23 @@ const Requests = () => {
                                             </div>
                                         </div>
                                     );
-                                })
-                            ) : (
-                                <p style={{ padding: '20px', color: 'gray' }}>
-                                    No drives available. Waiting for search...
-                                </p>
-                            )}
-                        </div>
+                                })}
+                            </div>
+                        ) : (
+                            <p style={{ padding: '20px', color: 'gray', textAlign: 'center' }}>
+                                No drives available. Waiting for search...
+                            </p>
+                        )}
                     </div>
 
                     {/* flight results */}
                     <div className="layout-column">
                         <h3 className="column-header">Flights</h3>
-                        <div className="card-grid">
-                            {Array.isArray(flights) && flights.length > 0 ? (
-                                flights.map((flight, index) => {
+
+                        {/* Display no flight message if nothing in array */}
+                        {Array.isArray(flights) && flights.length > 0 ? (
+                            <div className="card-grid">
+                                {flights.map((flight, index) => {
                                     if (!flight.price && !flight.flight_price) return null;
                                     const price = flight.price || flight.flight_price;
                                     const airline = flight.airline || (flight.segments && flight.segments[0]?.airline) || "N/A";
@@ -167,13 +171,13 @@ const Requests = () => {
                                             </div>
                                         </div>
                                     );
-                                })
-                            ) : (
-                                <p style={{ padding: '20px', color: 'gray' }}>
-                                    No flights available. Waiting for search...
-                                </p>
-                            )}
-                        </div>
+                                })}
+                            </div>
+                        ) : (
+                            <p style={{ padding: '20px', color: 'gray', textAlign: 'center' }}>
+                                No flights available. Waiting for search...
+                            </p>
+                        )}
                     </div>
                 </div>
             </div>
