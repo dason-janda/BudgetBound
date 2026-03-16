@@ -81,7 +81,7 @@ const Requests = () => {
                         <AddRequestForm addRequest={addRequest} />
                     </div>
                     <div className="compare-container" style={{ display: 'flex', justifyContent: 'center' }}>
-                        <button 
+                        <button
                             className="compare-button"
                             onClick={goToComparison}
                             disabled={selectedTrips.length === 0}

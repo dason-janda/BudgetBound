@@ -62,8 +62,6 @@ def getDrivingDestinations(startLocation: str):
         driveTime = calculateDriveTime(startLocation, endLocationsList)
 
         for index, city in enumerate(candidates):
-            endLocation = city["name"] + city["adminName1"]
-            driveTime = calculateDriveTime(startLocation, endLocation)
             drivingDestinations.append({
                 "city_name": city["name"],
                 "country": city["countryName"],
