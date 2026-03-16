@@ -13,7 +13,7 @@ df = pd.read_csv('airports.csv')
 df_major = df[df['iata'].str.match(r'^[A-Z]{3}$', na=False)].copy()
 
 def getDrivingDestinations(startLocation: str):
-    geolocator = Nominatim(user_agent="DriveLookup")
+    geolocator = Nominatim(user_agent="BudgetBound_SeniorProject_DriveLookup")
 
     location = geolocator.geocode(startLocation)
     if not location:
@@ -57,15 +57,19 @@ def getDrivingDestinations(startLocation: str):
     
         drivingDestinations = []
 
-        for city in candidates:
+        endLocationsList = [f"{city['name']}, {city['adminName1']}" for city in candidates]
+
+        driveTime = calculateDriveTime(startLocation, endLocationsList)
+
+        for index, city in enumerate(candidates):
             endLocation = city["name"] + city["adminName1"]
             driveTime = calculateDriveTime(startLocation, endLocation)
             drivingDestinations.append({
                 "city_name": city["name"],
                 "country": city["countryName"],
                 "state": city["adminName1"],
-                "distance_km": driveTime[0],
-                "drive_time_hours": driveTime[1],
+                "distance_km": driveTime[index][0],
+                "drive_time_hours": driveTime[index][1],
                 "transport_mode": "car"
             })
 
@@ -106,21 +110,29 @@ def removeBadAirport(iata):
     except Exception as e:
         print(f"Failed to update CSV: {e}")
 
-def calculateDriveTime(startCity, endCity):
+def calculateDriveTime(startCity, endCities):
+    if not endCities:
+        return []
+
     gmaps = googlemaps.Client(key=maps_api_key)
 
     distance_result = gmaps.distance_matrix(
-        origins=startCity,
-        destinations=endCity,
+        origins=[startCity],
+        destinations=endCities,
         mode="driving",
     )
 
-    if distance_result["rows"][0]["elements"][0]["status"] == "OK":
-        
-        distance = distance_result["rows"][0]["elements"][0]["distance"]["text"]
-        duration = distance_result["rows"][0]["elements"][0]["duration"]["text"]
-        
-        return [distance, duration]
+    results = []
     
-    else:
-        return ["N/A", "N/A"]
+    # We only have one starting destination so we only need the first row
+    elements = distance_result["rows"][0]["elements"]
+    
+    for element in elements:
+        if element["status"] == "OK":
+            distance = element["distance"]["text"]
+            duration = element["duration"]["text"]
+            results.append([distance, duration])
+        else:
+            results.append(["N/A", "N/A"])
+            
+    return results

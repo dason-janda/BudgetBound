@@ -1,6 +1,40 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from "../api.js";
+import { APIProvider, Map, Marker } from '@vis.gl/react-google-maps';
+
+const HotelMap = ({ hotels }) => {
+    if (!hotels || hotels.length === 0) return null;
+
+    // Center the map on the first hotel in the list
+    const defaultCenter = {
+        lat: Number(hotels[0].lat),
+        lng: Number(hotels[0].long)
+    };
+
+    return (
+        <div style={{ height: '250px', width: '100%', marginTop: '15px', marginBottom: '15px', borderRadius: '8px', overflow: 'hidden' }}>
+            <APIProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
+                <Map defaultZoom={12} defaultCenter={defaultCenter}>
+                    {hotels.map((hotel, index) => {
+                        // Skip if the API didn't return coordinates for some reason
+                        if (!hotel.lat || !hotel.long) return null;
+
+                        return (
+                            <Marker
+                                key={index}
+                                position={{ lat: Number(hotel.lat), lng: Number(hotel.long) }}
+                                // This adds the number (1, 2, 3...) to the red pin!
+                                label={{ text: (index + 1).toString(), color: 'white', fontWeight: 'bold' }}
+                                title={hotel.name}
+                            />
+                        );
+                    })}
+                </Map>
+            </APIProvider>
+        </div>
+    );
+};
 
 const CompareTrips = () => {
     const location = useLocation();
@@ -20,7 +54,7 @@ const CompareTrips = () => {
                     transportType: trip.transport_type,
                     depart: trip.depart_date,
                     ret: trip.return_date,
-                    budget: trip.budget
+                    budget: trip.budget,
                 })
                     .then(res => ({ ...trip, ...res.data, status: 'success' }))
                     .catch(err => ({ ...trip, status: 'error' }))
@@ -102,6 +136,10 @@ const CompareTrips = () => {
                                 })
                             ) : (
                                 <p className="error-text">No hotels found within remaining budget.</p>
+                            )}
+
+                            {trip.hotel_options && trip.hotel_options.length > 0 && (
+                                <HotelMap hotels={trip.hotel_options} />
                             )}
 
                             {selectedHotels[tripIndex] !== undefined && (

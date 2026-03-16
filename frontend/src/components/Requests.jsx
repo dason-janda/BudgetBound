@@ -81,7 +81,7 @@ const Requests = () => {
                         <AddRequestForm addRequest={addRequest} />
                     </div>
                     <div className="compare-container" style={{ display: 'flex', justifyContent: 'center' }}>
-                        <button
+                        <button 
                             className="compare-button"
                             onClick={goToComparison}
                             disabled={selectedTrips.length === 0}
@@ -100,32 +100,37 @@ const Requests = () => {
                     <div className="layout-column">
                         <h3 className="column-header">Drives</h3>
                         <div className="card-grid">
-                            {drives.map((drive, index) => {
-                                const isSelected = selectedTrips.some(t => t.id === `drive-${drive.city_name}`);
+                            {Array.isArray(drives) && drives.length > 0 ? (
+                                drives.map((drive, index) => {
+                                    const isSelected = selectedTrips.some(t => t.id === `drive-${drive.city_name}`);
 
-                                return (
-                                    <div
-                                        key={index}
-                                        // Dynamically apply the 'selected' class
-                                        className={`trip-card ${isSelected ? 'selected' : ''}`}
-                                        onClick={() => toggleSelection(drive, 'drive')}
-                                    >
-                                        <div className="card-row">
-                                            <h3 style={{ margin: 0 }}>{drive.city_name}</h3>
-                                            <input type="checkbox" checked={isSelected} readOnly />
-                                        </div>
+                                    return (
+                                        <div
+                                            key={index}
+                                            className={`trip-card ${isSelected ? 'selected' : ''}`}
+                                            onClick={() => toggleSelection(drive, 'drive')}
+                                        >
+                                            <div className="card-row">
+                                                <h3 style={{ margin: 0 }}>{drive.city_name}</h3>
+                                                <input type="checkbox" checked={isSelected} readOnly />
+                                            </div>
 
-                                        <div className="card-row">
-                                            <span className="drive-time">{drive.drive_time_hours}</span>
-                                            <span className="airline">{drive.distance_km}</span>
+                                            <div className="card-row">
+                                                <span className="drive-time">{drive.drive_time_hours}</span>
+                                                <span className="airline">{drive.distance_km}</span>
+                                            </div>
+                                            <div className="details">
+                                                <p style={{ margin: '5px 0' }}><strong>State:</strong> {drive.state}</p>
+                                                <p style={{ margin: '5px 0' }}><strong>Country:</strong> {drive.country}</p>
+                                            </div>
                                         </div>
-                                        <div className="details">
-                                            <p style={{ margin: '5px 0' }}><strong>State:</strong> {drive.state}</p>
-                                            <p style={{ margin: '5px 0' }}><strong>Country:</strong> {drive.country}</p>
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })
+                            ) : (
+                                <p style={{ padding: '20px', color: 'gray' }}>
+                                    No drives available. Waiting for search...
+                                </p>
+                            )}
                         </div>
                     </div>
 
@@ -133,35 +138,41 @@ const Requests = () => {
                     <div className="layout-column">
                         <h3 className="column-header">Flights</h3>
                         <div className="card-grid">
-                            {flights.map((flight, index) => {
-                                if (!flight.price && !flight.flight_price) return null;
-                                const price = flight.price || flight.flight_price;
-                                const airline = flight.airline || (flight.segments && flight.segments[0]?.airline) || "N/A";
-                                const isSelected = selectedTrips.some(t => t.id === `flight-${flight.city_name}`);
+                            {Array.isArray(flights) && flights.length > 0 ? (
+                                flights.map((flight, index) => {
+                                    if (!flight.price && !flight.flight_price) return null;
+                                    const price = flight.price || flight.flight_price;
+                                    const airline = flight.airline || (flight.segments && flight.segments[0]?.airline) || "N/A";
+                                    const isSelected = selectedTrips.some(t => t.id === `flight-${flight.city_name}`);
 
-                                return (
-                                    <div
-                                        key={index}
-                                        className={`trip-card ${isSelected ? 'selected' : ''}`}
-                                        onClick={() => toggleSelection(flight, 'flight')}
-                                    >
-                                        <div className="card-row">
-                                            <h3 style={{ margin: 0 }}>{flight.city_name || flight.segments?.[0]?.arrival_city}</h3>
-                                            <input type="checkbox" checked={isSelected} readOnly />
-                                        </div>
+                                    return (
+                                        <div
+                                            key={index}
+                                            className={`trip-card ${isSelected ? 'selected' : ''}`}
+                                            onClick={() => toggleSelection(flight, 'flight')}
+                                        >
+                                            <div className="card-row">
+                                                <h3 style={{ margin: 0 }}>{flight.city_name || flight.segments?.[0]?.arrival_city}</h3>
+                                                <input type="checkbox" checked={isSelected} readOnly />
+                                            </div>
 
-                                        <div className="card-row">
-                                            <span className="price">${price}</span>
-                                            <span className="airline">{airline}</span>
-                                        </div>
+                                            <div className="card-row">
+                                                <span className="price">${price}</span>
+                                                <span className="airline">{airline}</span>
+                                            </div>
 
-                                        <div className="details">
-                                            <p style={{ margin: '5px 0' }}><strong>Duration:</strong> {formatDuration(flight.duration_minutes)}</p>
-                                            <p style={{ margin: '5px 0' }}><strong>Stops:</strong> {flight.stops === 0 ? "Non-stop" : flight.stops}</p>
+                                            <div className="details">
+                                                <p style={{ margin: '5px 0' }}><strong>Duration:</strong> {formatDuration(flight.duration_minutes)}</p>
+                                                <p style={{ margin: '5px 0' }}><strong>Stops:</strong> {flight.stops === 0 ? "Non-stop" : flight.stops}</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })
+                            ) : (
+                                <p style={{ padding: '20px', color: 'gray' }}>
+                                    No flights available. Waiting for search...
+                                </p>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -169,5 +180,6 @@ const Requests = () => {
         </>
     );
 };
+
 
 export default Requests;

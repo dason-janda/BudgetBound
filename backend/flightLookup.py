@@ -72,7 +72,9 @@ def hotelSearch(destination: str, max_price: int, depart: int, ret: int):
                     "rating": prop.get("overall_rating"),
                     #Also have the option for images with hotels but will look at implementing that after my mvp
                     #"image": prop.get("images", [{}])[0].get("thumbnail"),
-                    "link": prop.get("link")
+                    "link": prop.get("link"),
+                    "lat" : prop.get("gps_coordinates").get("latitude"), 
+                    "long" : prop.get("gps_coordinates").get("longitude"),
                 })
         return hotels
 
