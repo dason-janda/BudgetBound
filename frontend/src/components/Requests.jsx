@@ -6,28 +6,48 @@ import AddRequestForm from './AddRequestForm';
 const Requests = () => {
     const navigate = useNavigate();
 
-    const [flights, setFlights] = useState([]);
-    const [drives, setDrives] = useState([]);
+    const [flights, setFlights] = useState(() => {
+        const saved = sessionStorage.getItem('budgetBound_flights');
+        return saved ? JSON.parse(saved) : [];
+    });
+
+    const [drives, setDrives] = useState(() => {
+        const saved = sessionStorage.getItem('budgetBound_drives');
+        return saved ? JSON.parse(saved) : [];
+    });
+
+    const [searchParams, setSearchParams] = useState(() => {
+        const saved = sessionStorage.getItem('budgetBound_params');
+        return saved ? JSON.parse(saved) : { depart: '', ret: '', budget: 0 };
+    });
+
     const [selectedTrips, setSelectedTrips] = useState([]);
-    const [searchParams, setSearchParams] = useState({ depart: '', ret: '', budget: 0 });
 
     const fetchRequests = async () => {
         api.get('/drives').then(response => {
             setDrives(response.data);
+            // Save drives list to browser memory
+            sessionStorage.setItem('budgetBound_drives', JSON.stringify(response.data));
         });
 
         api.get('/flights').then(response => {
             setFlights(response.data);
+            // Save flights list to browser memory
+            sessionStorage.setItem('budgetBound_flights', JSON.stringify(response.data));
         });
     };
 
     const addRequest = async (newRequestData) => {
-        /* capture dates and budget for hotel lookup and final price calculations later*/
+        //capture dates and budget for hotel lookup and final price calculations later
         setSearchParams({
             depart: newRequestData.depart,
             ret: newRequestData.ret,
             budget: newRequestData.budget
         });
+
+        setSearchParams(newParams);
+        sessionStorage.setItem('budgetBound_params', JSON.stringify(newParams));
+
         try {
             await api.post('/requests', newRequestData);
             fetchRequests();
@@ -100,7 +120,7 @@ const Requests = () => {
                     <div className="layout-column">
                         <h3 className="column-header">Drives</h3>
 
-                        {/* Display no drive message if nothing in array */}
+                        {/* Display no drives message if nothing in array */}
                         {Array.isArray(drives) && drives.length > 0 ? (
                             <div className="card-grid">
                                 {drives.map((drive, index) => {

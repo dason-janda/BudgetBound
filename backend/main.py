@@ -100,6 +100,8 @@ def add_request(req: Request):
 @app.post(path='/tripDetails')
 def add_request(req: detailsRequest):
     #Calculate the trip duration
+    if not req.depart:
+        return {"error": "Missing departure date"}
     dateFormat = "%Y-%m-%d"
     startDate = datetime.strptime(req.depart, dateFormat).date()
     endDate = datetime.strptime(req.ret, dateFormat).date()
