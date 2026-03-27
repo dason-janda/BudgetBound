@@ -31,7 +31,8 @@ def lookupRequest(airportCode: str, max_price: int, depart: str, ret: str):
                     #"image": item.get("thumbnail"),
                     "airline": item.get("airline"),
                     "duration_minutes": item.get("flight_duration"),
-                    "stops": item.get("number_of_stops") 
+                    "stops": item.get("number_of_stops"),
+                    "origin": airportCode
                 }
                 flight_results.append(destination)
     
@@ -42,9 +43,6 @@ def lookupRequest(airportCode: str, max_price: int, depart: str, ret: str):
 
 def hotelSearch(destination: str, max_price: int, depart: int, ret: int):
     print(f"Searching hotels in {destination} under ${max_price}/night...")
-
-    #formatted_depart = f"{depart_str[:4]}-{depart_str[4:6]}-{depart_str[6:8]}"
-    #formatted_ret = f"{ret_str[:4]}-{ret_str[4:6]}-{ret_str[6:8]}"
     
     params = {
         "api_key": api_key,

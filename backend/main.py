@@ -12,7 +12,6 @@ driveResults = []
 
 def flightSearch(destination: str, max_price: int, depart: int, ret: int):
     print(f"Looking for flights from {destination} under ${max_price}")
-
     print(f"Depart: {depart} Return: {ret}")
 
     for attempt in range(5):
@@ -33,7 +32,29 @@ def flightSearch(destination: str, max_price: int, depart: int, ret: int):
             print(f"Error with airport {airportCode}: {e}")
             locationLookup.removeBadAirport(airportCode)
 
-    print("Could not find any valid flights after 3 attempts.")
+    print("Could not find any valid flights after 5 attempts.")
+
+def tryFlightSearch(destination: str, max_price: int, depart: int, ret: int):
+    print(f"Looking for flights from {destination} under ${max_price}")
+    print(f"Depart: {depart} Return: {ret}")
+
+    airportCode = locationLookup.getNearestAirport(destination)
+    try:
+        results = flightLookup.lookupRequest(airportCode, max_price, depart, ret)
+        if not results or len(results) == 0: 
+            alternativesList = locationLookup.getListNearbyAirports(destination)
+            flightResults.clear()
+            return {"status": "needs_alternative", "alternatives": alternativesList}
+        flightResults.clear()
+        flightResults.extend(results)
+        print(f"Found {len(results)} flights from {airportCode}")
+        return {"status": "success"}
+
+    except Exception as e:
+        print(f"Error with airport {airportCode}: {e}")
+        alternativesList = locationLookup.getListNearbyAirports(destination)
+        flightResults.clear()
+        return {"status": "needs_alternative", "alternatives": alternativesList}
 
 def driveSearch(destination: str):
     print(f"Looking for drives from {destination}")
@@ -65,7 +86,7 @@ class detailsRequest(BaseModel):
 app = FastAPI()
 
 origins = [
-    "http://localhost:5173",
+    "http://localhost:5173" ,
     "https://budget-bound.vercel.app"
 ]
 
@@ -77,8 +98,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-#temp_db = []
-
 @app.get(path="/flights")
 def get_flights():
     #print(flightResults)
@@ -89,13 +108,19 @@ def get_drives():
     #print(driveResults)
     return driveResults
 
-@app.post(path="/requests", response_model=Request)
+@app.post(path="/requests")
 def add_request(req: Request):
-    #temp_db.append(req)
-    # when we get information from the user we can call my search apis
+    # trying to request my apis
     driveSearch(req.location)
-    flightSearch(req.location, req.budget, req.depart, req.ret)
-    return req
+
+    # Trying the flight search and if it fails returning a list of alternatives
+    flight_status = tryFlightSearch(req.location, req.budget, req.depart, req.ret)
+    if flight_status and flight_status.get("status") == "needs_alternative":
+        return {
+            "status": "needs_alternative", 
+            "alternatives": flight_status["alternatives"]
+        }
+    return {"status": "success"}
 
 @app.post(path='/tripDetails')
 def add_request(req: detailsRequest):
@@ -123,6 +148,38 @@ def add_request(req: detailsRequest):
         "hotel_options": hotels,
         "duration": duration
     }
+
+@app.post(path="/alt-flights")
+def get_alternative_flights(req: Request):
+    # Here, req.location is the exact 3-letter IATA code (e.g., "LAS")
+    print(f"Looking for alternative flights specifically from {req.location}")
+    
+    try:
+        # Pass the IATA code directly into your lookup function
+        results = flightLookup.lookupRequest(req.location, req.budget, req.depart, req.ret)
+        
+        flightResults.clear() # Clear out old results
+        
+        if results and len(results) > 0:
+            flightResults.extend(results)
+            print(f"Found {len(results)} flights from alternative airport {req.location}")
+            return {"status": "success"}
+        else:
+            return {"status": "failed", "message": "No flights found from this airport."}
+
+    except Exception as e:
+        print(f"Error with alternative airport {req.location}: {e}")
+        return {"status": "error"}
+    
+@app.get(path="/nearby-airports/{location}")
+def get_manual_alternatives(location: str):
+    print(f"Manually fetching alternative airports for {location}")
+    try:
+        alternativesList = locationLookup.getListNearbyAirports(location)
+        return {"status": "success", "alternatives": alternativesList}
+    except Exception as e:
+        print(f"Error fetching manual alternatives: {e}")
+        return {"status": "error"}
     
 
 if __name__ == "__main__":

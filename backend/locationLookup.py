@@ -17,6 +17,7 @@ def getDrivingDestinations(startLocation: str):
 
     location = geolocator.geocode(startLocation)
     if not location:
+        print("Geolocation failed")
         return []
     
     startLat = location.latitude
@@ -32,13 +33,14 @@ def getDrivingDestinations(startLocation: str):
         "lng": startLon,
         "radius": radiusKm,
         "cities": "cities15000",
-        "maxRows": 200,
+        "maxRows": 500,
         "username": username
     }
 
     response = requests.get(url, params=params).json()
 
     candidates = []
+    drivingDestinations = []
 
     if "geonames" in response:
         for city in response["geonames"]:
@@ -54,8 +56,6 @@ def getDrivingDestinations(startLocation: str):
 
         if len(candidates) > 20:
             candidates = random.sample(candidates, 20)
-    
-        drivingDestinations = []
 
         endLocationsList = [f"{city['name']}, {city['adminName1']}" for city in candidates]
 
@@ -73,12 +73,11 @@ def getDrivingDestinations(startLocation: str):
 
         if len(drivingDestinations) == 0:
             print("Drive lookup failed")
-
+    print(f"Got {len(drivingDestinations)} drives")
     return drivingDestinations
 
 def getNearestAirport(cityName):
     geolocator = Nominatim(user_agent="AirportLookup")
-    
     location = geolocator.geocode(cityName)
     
     if not location:
@@ -96,6 +95,35 @@ def getNearestAirport(cityName):
     print(f"Nearest airport to {cityName} is {nearestAirport['name']} ({nearestAirport['iata']}) - {nearestAirport['distance']:.1f} miles away")
 
     return nearestAirport['iata']
+
+def getListNearbyAirports(cityName):
+    amount = 10
+    geolocator = Nominatim(user_agent="AirportLookup")
+    location = geolocator.geocode(cityName)
+
+    if not location:
+        print(f"Could not find city: {cityName}")
+        return None
+    
+    userCoords = (location.latitude, location.longitude)
+    
+    def calculate_distance(row):
+        airportCoords = (row['latitude'], row['longitude'])
+        return geodesic(userCoords, airportCoords).miles
+
+    df_major['distance'] = df_major.apply(calculate_distance, axis=1)
+    top_airports = df_major.sort_values(by='distance').head(amount)
+
+    alternativesList = []
+    for _, row in top_airports.iterrows():
+        alternativesList.append({
+            "name": row['name'],
+            "iata": row['iata'],
+            "distance": round(row['distance'], 1)
+        })  
+
+    print(f"Returning list of {amount} of airports from {cityName}")
+    return alternativesList
 
 def removeBadAirport(iata):
     
