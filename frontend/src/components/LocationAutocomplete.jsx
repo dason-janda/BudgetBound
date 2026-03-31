@@ -9,67 +9,73 @@ const LocationAutocomplete = ({ location, setLocation }) => {
         setLocationRef.current = setLocation;
     }, [setLocation]);
 
-    useEffect(() => {
-        if (!window.google || !window.google.maps || !window.google.maps.places) {
-            console.error("Google Maps API not loaded");
-            return;
-        }
+useEffect(() => {
+        let intervalId;
 
-        if (containerRef.current) {
-            containerRef.current.innerHTML = '';
-        }
-
-        const placeAutocomplete = new window.google.maps.places.PlaceAutocompleteElement({
-            includedPrimaryTypes: ['locality', 'administrative_area_level_3']
-        });
-
-        autocompleteRef.current = placeAutocomplete;
-
-        if (containerRef.current) {
-            containerRef.current.appendChild(placeAutocomplete);
-        }
-
-        placeAutocomplete.addEventListener('gmp-select', async ({ placePrediction }) => {
-            if (!placePrediction) {
-                setLocationRef.current('');
-                return;
+        const initializeAutocomplete = () => {
+            if (containerRef.current) {
+                containerRef.current.innerHTML = ''; 
             }
 
-            const place = placePrediction.toPlace();
-
-            await place.fetchFields({
-                fields: ['displayName', 'formattedAddress', 'addressComponents']
+            const placeAutocomplete = new window.google.maps.places.PlaceAutocompleteElement({
+                includedPrimaryTypes: ['locality', 'administrative_area_level_3']
             });
 
-            let city = '';
-            let state = '';
+            autocompleteRef.current = placeAutocomplete;
 
-            if (place.addressComponents) {
-                for (const component of place.addressComponents) {
-                    const types = component.types;
+            if (containerRef.current) {
+                containerRef.current.appendChild(placeAutocomplete);
+            }
 
-                    if (types.includes('locality')) {
-                        city = component.longText;
-                    }
+            placeAutocomplete.addEventListener('gmp-select', async ({ placePrediction }) => {
+                if (!placePrediction) {
+                    setLocationRef.current(''); 
+                    return;
+                }
 
-                    if (types.includes('administrative_area_level_1')) {
-                        state = component.shortText;
+                const place = placePrediction.toPlace();
+                await place.fetchFields({ 
+                    fields: ['displayName', 'formattedAddress', 'addressComponents'] 
+                });
+
+                let city = '';
+                let state = '';
+
+                if (place.addressComponents) {
+                    for (const component of place.addressComponents) {
+                        const types = component.types;
+                        if (types.includes('locality')) city = component.longText; 
+                        if (types.includes('administrative_area_level_1')) state = component.shortText; 
                     }
                 }
-            }
 
-            if (city && state) {
-                setLocationRef.current(`${city}, ${state}`);
-            } else if (place.formattedAddress) {
-                setLocationRef.current(place.formattedAddress);
-            } else if (place.displayName) {
-                setLocationRef.current(place.displayName);
-            }
-        });
+                if (city && state) {
+                    setLocationRef.current(`${city}, ${state}`);
+                } else if (place.formattedAddress) {
+                    setLocationRef.current(place.formattedAddress);
+                } else if (place.displayName) {
+                    setLocationRef.current(place.displayName);
+                }
+            });
+        };
 
+        // Check if Google Maps is already loaded
+        if (window.google && window.google.maps && window.google.maps.places) {
+            initializeAutocomplete();
+        } else {
+            // If not, check every 100ms until it is!
+            intervalId = setInterval(() => {
+                if (window.google && window.google.maps && window.google.maps.places) {
+                    clearInterval(intervalId); // Stop checking
+                    initializeAutocomplete(); // Build the widget
+                }
+            }, 100);
+        }
+
+        // Cleanup function
         return () => {
+            if (intervalId) clearInterval(intervalId);
             if (containerRef.current && autocompleteRef.current) {
-                // Safely remove the element on unmount
                 if (containerRef.current.contains(autocompleteRef.current)) {
                     containerRef.current.removeChild(autocompleteRef.current);
                 }
