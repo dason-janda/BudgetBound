@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import LocationAutocomplete from './LocationAutocomplete';
 
 const AddRequestForm = ({ addRequest }) => {
     const [formData, setFormData] = useState({
@@ -43,13 +44,16 @@ const AddRequestForm = ({ addRequest }) => {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '300px' }}>
             <h3>Request a New Trip</h3>
 
-            <input
-                type="text"
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-                placeholder="Starting Location (e.g. Las Vegas NV)"
-                required
+            <LocationAutocomplete
+                location={formData.location}
+                setLocation={(newLocation) => {
+                    handleChange({
+                        target: {
+                            name: 'location',
+                            value: newLocation
+                        }
+                    });
+                }}
             />
 
             <input
