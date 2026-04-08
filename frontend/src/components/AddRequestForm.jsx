@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import LocationAutocomplete from './LocationAutocomplete';
+import { useNavigate } from 'react-router-dom';
 
 const AddRequestForm = ({ addRequest }) => {
     const [formData, setFormData] = useState({
@@ -37,6 +38,11 @@ const AddRequestForm = ({ addRequest }) => {
 
             // reset form after submitted
             setFormData({ location: '', budget: '', depart: '', ret: '' });
+
+            if (Number(budget) <= 0) {
+                alert("Please enter a valid budget.");
+                return;
+            }
         }
     };
 

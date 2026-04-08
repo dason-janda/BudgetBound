@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from "../api.js";
 import AddRequestForm from './AddRequestForm';
 
 const Requests = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const hasFired = useRef(false);
 
     const [flights, setFlights] = useState(() => {
         const saved = sessionStorage.getItem('budgetBound_flights');
@@ -158,6 +160,26 @@ const Requests = () => {
     const goToComparison = () => {
         navigate('/compare', { state: { trips: selectedTrips } });
     }
+
+    useEffect(() => {
+        // Did we just arrive from the Home page with new search data?
+        if (location.state?.triggerNewSearch) {
+            hasFired.current = true;
+            const newRequestData = location.state.triggerNewSearch;
+
+            // Clear out React state immediately just to be safe
+            setFlights([]);
+            setDrives([]);
+            setAlternatives([]);
+
+            // Fire the actual POST request to your backend!
+            addRequest(newRequestData);
+
+            // Wipe the router state clean. 
+            // This prevents the search from re-firing if the user hits the "Refresh" button on their browser.
+            navigate('/results', { replace: true, state: {} });
+        }
+    }, [location.state, navigate]);
 
     return (
         <>
