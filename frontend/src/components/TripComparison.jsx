@@ -133,7 +133,28 @@ const CompareTrips = () => {
                         <span>{trip.transport_type}</span>
 
                         <div className="cost-section">
-                            <p>Transport: <strong>${trip.transport_cost}</strong></p>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                                <p style={{ margin: 0 }}>Transport: <strong>${trip.transport_cost}</strong></p>
+
+                                {/* flight booking link */}
+                                {trip.flight_link && (
+                                    <a
+                                        href={trip.flight_link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{
+                                            padding: '6px 12px',
+                                            backgroundColor: '#b5cce5',
+                                            color: 'white',
+                                            textDecoration: 'none',
+                                            borderRadius: '4px',
+                                            fontSize: '0.9em'
+                                        }}
+                                    >
+                                        Book {trip.transport_type === 'flight' ? 'Flight ✈️' : 'Transport ➔'}
+                                    </a>
+                                )}
+                            </div>
 
                             {trip.hotel_options && trip.hotel_options.length > 0 ? (
                                 trip.hotel_options.map((hotel, hotelIndex) => {
@@ -144,16 +165,39 @@ const CompareTrips = () => {
                                             key={hotelIndex}
                                             className={`hotel-item ${isSelected ? 'selected' : ''}`}
                                             onClick={() => handleHotelSelect(tripIndex, hotelIndex)}
+                                            style={{ cursor: 'pointer', padding: '10px', border: '1px solid #ccc', marginBottom: '10px', borderRadius: '5px' }}
                                         >
-                                            <h4 className="hotel-name">{hotelIndex + 1}. {hotel.name}</h4>
+                                            <h4 className="hotel-name" style={{ margin: '0 0 5px 0' }}>{hotelIndex + 1}. {hotel.name}</h4>
 
-                                            <div className="hotel-details">
-                                                <span className="hotel-price">
-                                                    {hotel.price ? `${hotel.price}` : 'Price N/A'} / night
-                                                </span>
+                                            <div className="hotel-details" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div>
+                                                    <span className="hotel-price" style={{ display: 'block' }}>
+                                                        {hotel.price ? `${hotel.price}` : 'Price N/A'} / night
+                                                    </span>
 
-                                                {hotel.rating && (
-                                                    <span>⭐ {hotel.rating.toFixed(1)}</span>
+                                                    {hotel.rating && (
+                                                        <span>⭐ {hotel.rating.toFixed(1)}</span>
+                                                    )}
+                                                </div>
+
+                                                {/* hotel booking links*/}
+                                                {hotel.link && (
+                                                    <a
+                                                        href={hotel.link}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        onClick={(e) => e.stopPropagation()} // Prevents selecting the hotel when clicking the link
+                                                        style={{
+                                                            padding: '6px 12px',
+                                                            backgroundColor: '#a9a7ab',
+                                                            color: 'white',
+                                                            textDecoration: 'none',
+                                                            borderRadius: '4px',
+                                                            fontSize: '0.9em'
+                                                        }}
+                                                    >
+                                                        Book Hotel
+                                                    </a>
                                                 )}
                                             </div>
                                         </div>
@@ -168,7 +212,7 @@ const CompareTrips = () => {
                             )}
 
                             {selectedHotels[tripIndex] !== undefined && (
-                                <div className="total-trip-price">
+                                <div className="total-trip-price" style={{ marginTop: '15px', fontWeight: 'bold', fontSize: '1.1em' }}>
                                     Total Trip Cost: ${calculateTotal(trip, selectedHotels[tripIndex])}
                                 </div>
                             )}

@@ -6,6 +6,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
 from datetime import datetime   
+from google import genai
+from google.genai import types
+import json
+import os
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+
+client = genai.Client()
 
 flightResults = []
 driveResults = []
@@ -82,6 +90,9 @@ class detailsRequest(BaseModel):
     ret: str
     budget: int
 
+class FilterRequest(BaseModel):
+    userPrompt: str
+    destinations: list[str]
 
 app = FastAPI()
 
@@ -180,6 +191,41 @@ def get_manual_alternatives(location: str):
     except Exception as e:
         print(f"Error fetching manual alternatives: {e}")
         return {"status": "error"}
+    
+@app.post("/api/filter-destinations")
+async def filter_destinations(request: FilterRequest):
+    try:
+        prompt = f"""
+        You are a helpful travel assistant. 
+        The user is looking for desinations that fit the criteria: "{request.userPrompt}"
+        
+        Here is the list of available destinations to choose from: 
+        {', '.join(request.destinations)}
+
+        Analyze the destinations and select ONLY the ones that clearly match the user's request. 
+        
+        You must return a JSON object with this exact structure:
+        {{
+            "matched_cities": ["City 1", "City 2"...],
+            "explanation": "A 2-sentence explanation of why these specific cities match the user's request."
+        }}
+        """
+
+        # 🚨 Call the model using the new syntax and config structure
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+            )
+        )
+        
+        # Parse the json string from Gemini into a dictionary
+        return json.loads(response.text)
+
+    except Exception as e:
+        print(f"Error calling Gemini: {e}")
+        raise HTTPException(status_code=500, detail="Failed to process AI request")
     
 
 if __name__ == "__main__":

@@ -28,6 +28,12 @@ const Requests = () => {
     // isManual is set to false that means the flight lookup failed and we need to display failed text
     const [isManualAlt, setIsManualAlt] = useState(false);
     const [loading, setLoading] = useState(false);
+    //Usestates for ai prompt
+    const [aiPrompt, setAiPrompt] = useState("");
+    const [aiExplanation, setAiExplanation] = useState("");
+    const [aiIsLoading, setAiIsLoading] = useState(false);
+    // this usestate will hold the list of matched destinations
+    const [matchedCities, setMatchedCities] = useState([]);
 
     const fetchRequests = async () => {
         setLoading(true);
@@ -151,7 +157,8 @@ const Requests = () => {
                 transport_cost: type === 'flight' ? (trip.price || trip.flight_price) : 0,
                 depart_date: searchParams.depart,
                 return_date: searchParams.ret,
-                budget: searchParams.budget
+                budget: searchParams.budget,
+                flight_link: type === 'flight' ? trip.flight_link : null,
             };
             setSelectedTrips([...selectedTrips, newTrip]);
         }
@@ -160,6 +167,35 @@ const Requests = () => {
     const goToComparison = () => {
         navigate('/compare', { state: { trips: selectedTrips } });
     }
+
+    const handleAiFilter = async () => {
+        if (!aiPrompt) return;
+        setAiIsLoading(true);
+        setAiExplanation("");
+
+        try {
+            // Gather all unique city names from BOTH flights and drives
+            const flightCities = flights.map(f => f.city_name || f.segments?.[0]?.arrival_city).filter(Boolean);
+            const driveCities = drives.map(d => d.city_name).filter(Boolean);
+            const allDestinations = [...new Set([...flightCities, ...driveCities])];
+
+            // Call your backend
+            const response = await api.post('/api/filter-destinations', {
+                userPrompt: aiPrompt,
+                destinations: allDestinations
+            });
+
+            // Set the matched cities to trigger the UI filter
+            setMatchedCities(response.data.matched_cities);
+            setAiExplanation(response.data.explanation);
+
+        } catch (error) {
+            console.error("Error filtering with AI:", error);
+            setAiExplanation("Sorry, I had trouble analyzing these destinations.");
+        } finally {
+            setAiIsLoading(false);
+        }
+    };
 
     useEffect(() => {
         // Did we just arrive from the Home page with new search data?
@@ -205,7 +241,7 @@ const Requests = () => {
                     {/* Only show this if we actually have flights to display AND we are not loading */}
                     {!loading && flights.length > 0 && (
                         <div style={{ marginBottom: '20px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', justifyContent: 'center' }}>
                                 <span style={{ color: '#fff' }}>
                                     Displaying results from: <strong>{flights[0].origin}</strong>
                                 </span>
@@ -233,7 +269,6 @@ const Requests = () => {
             {/* UI to display alternative airports (Hidden while loading) */}
             {!loading && alternatives.length > 0 && (
                 <div style={{ backgroundColor: '#fff3cd', padding: '20px', borderRadius: '8px', margin: '20px auto', maxWidth: '600px', textAlign: 'center', border: '1px solid #ffeeba' }}>
-                    {/* Check isManual to see which text to use */}
                     {isManualAlt ? (
                         <>
                             <h3 style={{ color: '#856404', marginTop: 0 }}>Change Airport</h3>
@@ -249,9 +284,7 @@ const Requests = () => {
                         {alternatives.map((alt, index) => (
                             <button
                                 key={index}
-                                onClick={() => {
-                                    fetchAlternativeFlights(alt.iata);
-                                }}
+                                onClick={() => { fetchAlternativeFlights(alt.iata); }}
                                 style={{ padding: '10px 16px', cursor: 'pointer', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#ffffff', fontWeight: 'bold' }}
                             >
                                 {alt.iata} - {alt.name}
@@ -269,88 +302,136 @@ const Requests = () => {
             )}
 
             {/* Main Results Container (Hidden while loading) */}
-            {!loading && (
-                <div className="requests-container">
+            {/* Main Results Container (Hidden while loading) */}
+            {!loading && (flights.length > 0 || drives.length > 0) && (
+                <div className="requests-container" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+
+                    {/* AI Feature UI */}
+                    <div className="ai-filter-section" style={{ marginBottom: '30px', padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '1px solid #e9ecef', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                        <h3 style={{ marginTop: 0, color: '#333' }}>Filter destinations with AI</h3>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <input
+                                type="text"
+                                placeholder="e.g., Places with great rock climbing"
+                                value={aiPrompt}
+                                onChange={(e) => setAiPrompt(e.target.value)}
+                                style={{ flex: 1, padding: '12px', borderRadius: '4px', border: '1px solid #ccc' }}
+                            />
+                            <button
+                                onClick={handleAiFilter}
+                                disabled={aiIsLoading}
+                                style={{ padding: '0 20px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                            >
+                                {aiIsLoading ? 'Thinking...' : 'Filter Results'}
+                            </button>
+                            {matchedCities.length > 0 && (
+                                <button
+                                    onClick={() => { setMatchedCities([]); setAiExplanation(""); }}
+                                    style={{ padding: '0 20px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                                >
+                                    Clear Filter
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Display Gemini's reasoning */}
+                        {aiExplanation && (
+                            <p style={{ marginTop: '15px', marginBottom: 0, fontStyle: 'italic', color: '#0056b3', backgroundColor: '#e2eef9', padding: '10px', borderRadius: '4px' }}>
+                                <strong>AI Explanation:</strong> {aiExplanation}
+                            </p>
+                        )}
+                    </div>
+
                     <div className="main-layout">
-                        {/* drive results */}
+                        {/* DRIVE RESULTS */}
                         <div className="layout-column">
                             <h3 className="column-header">Drives</h3>
 
-                            {/* Display no drives message if nothing in array */}
                             {Array.isArray(drives) && drives.length > 0 ? (
                                 <div className="card-grid">
-                                    {drives.map((drive, index) => {
-                                        const isSelected = selectedTrips.some(t => t.id === `drive-${drive.city_name}`);
+                                    {drives
+                                        // Filter cities by one that the AI has matched
+                                        .filter(drive => matchedCities.length === 0 || matchedCities.includes(drive.city_name))
+                                        .map((drive, index) => {
+                                            const isSelected = selectedTrips.some(t => t.id === `drive-${drive.city_name}`);
 
-                                        return (
-                                            <div
-                                                key={index}
-                                                className={`trip-card ${isSelected ? 'selected' : ''}`}
-                                                onClick={() => toggleSelection(drive, 'drive')}
-                                            >
-                                                <div className="card-row">
-                                                    <h3 style={{ margin: 0 }}>{drive.city_name}</h3>
-                                                    <input type="checkbox" checked={isSelected} readOnly />
-                                                </div>
+                                            return (
+                                                <div
+                                                    key={index}
+                                                    className={`trip-card ${isSelected ? 'selected' : ''}`}
+                                                    onClick={() => toggleSelection(drive, 'drive')}
+                                                >
+                                                    <div className="card-row">
+                                                        <h3 style={{ margin: 0 }}>{drive.city_name}</h3>
+                                                        <input type="checkbox" checked={isSelected} readOnly />
+                                                    </div>
 
-                                                <div className="card-row">
-                                                    <span className="drive-time">{drive.drive_time_hours}</span>
-                                                    <span className="airline">{drive.distance_km}</span>
+                                                    <div className="card-row">
+                                                        <span className="drive-time">{drive.drive_time_hours}</span>
+                                                        <span className="airline">{drive.distance_km}</span>
+                                                    </div>
+                                                    <div className="details">
+                                                        <p style={{ margin: '5px 0' }}><strong>State:</strong> {drive.state}</p>
+                                                        <p style={{ margin: '5px 0' }}><strong>Country:</strong> {drive.country}</p>
+                                                    </div>
                                                 </div>
-                                                <div className="details">
-                                                    <p style={{ margin: '5px 0' }}><strong>State:</strong> {drive.state}</p>
-                                                    <p style={{ margin: '5px 0' }}><strong>Country:</strong> {drive.country}</p>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                                            );
+                                        })}
                                 </div>
                             ) : (
                                 <p style={{ padding: '20px', color: 'gray', textAlign: 'center' }}>
-                                    No drives available. Waiting for search...
+                                    No drives available.
                                 </p>
                             )}
                         </div>
 
-                        {/* flight results */}
+                        {/* FLIGHT RESULTS */}
                         <div className="layout-column">
                             <h3 className="column-header">Flights</h3>
-                            {/* Display no flight message if nothing in array */}
+
                             {Array.isArray(flights) && flights.length > 0 ? (
                                 <div className="card-grid">
-                                    {flights.map((flight, index) => {
-                                        if (!flight.price && !flight.flight_price) return null;
-                                        const price = flight.price || flight.flight_price;
-                                        const airline = flight.airline || (flight.segments && flight.segments[0]?.airline) || "N/A";
-                                        const isSelected = selectedTrips.some(t => t.id === `flight-${flight.city_name}`);
+                                    {flights
+                                        // Filter by cities the AI matched
+                                        .filter(flight => {
+                                            if (matchedCities.length === 0) return true; // Show all if no filter
+                                            const cityName = flight.city_name || flight.segments?.[0]?.arrival_city;
+                                            return matchedCities.includes(cityName);
+                                        })
+                                        .map((flight, index) => {
+                                            if (!flight.price && !flight.flight_price) return null;
+                                            const price = flight.price || flight.flight_price;
+                                            const airline = flight.airline || (flight.segments && flight.segments[0]?.airline) || "N/A";
+                                            const cityName = flight.city_name || flight.segments?.[0]?.arrival_city;
+                                            const isSelected = selectedTrips.some(t => t.id === `flight-${cityName}`);
 
-                                        return (
-                                            <div
-                                                key={index}
-                                                className={`trip-card ${isSelected ? 'selected' : ''}`}
-                                                onClick={() => toggleSelection(flight, 'flight')}
-                                            >
-                                                <div className="card-row">
-                                                    <h3 style={{ margin: 0 }}>{flight.city_name || flight.segments?.[0]?.arrival_city}</h3>
-                                                    <input type="checkbox" checked={isSelected} readOnly />
-                                                </div>
+                                            return (
+                                                <div
+                                                    key={index}
+                                                    className={`trip-card ${isSelected ? 'selected' : ''}`}
+                                                    onClick={() => toggleSelection(flight, 'flight')}
+                                                >
+                                                    <div className="card-row">
+                                                        <h3 style={{ margin: 0 }}>{cityName}</h3>
+                                                        <input type="checkbox" checked={isSelected} readOnly />
+                                                    </div>
 
-                                                <div className="card-row">
-                                                    <span className="price">${price}</span>
-                                                    <span className="airline">{airline}</span>
-                                                </div>
+                                                    <div className="card-row">
+                                                        <span className="price">${price}</span>
+                                                        <span className="airline">{airline}</span>
+                                                    </div>
 
-                                                <div className="details">
-                                                    <p style={{ margin: '5px 0' }}><strong>Duration:</strong> {formatDuration(flight.duration_minutes)}</p>
-                                                    <p style={{ margin: '5px 0' }}><strong>Stops:</strong> {flight.stops === 0 ? "Non-stop" : flight.stops}</p>
+                                                    <div className="details">
+                                                        <p style={{ margin: '5px 0' }}><strong>Duration:</strong> {formatDuration(flight.duration_minutes)}</p>
+                                                        <p style={{ margin: '5px 0' }}><strong>Stops:</strong> {flight.stops === 0 ? "Non-stop" : flight.stops}</p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        );
-                                    })}
+                                            );
+                                        })}
                                 </div>
                             ) : (
                                 <p style={{ padding: '20px', color: 'gray', textAlign: 'center' }}>
-                                    No flights available. Waiting for search...
+                                    No flights available.
                                 </p>
                             )}
                         </div>

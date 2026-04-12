@@ -23,6 +23,11 @@ const AddRequestForm = ({ addRequest }) => {
     const handleSubmit = (event) => {
         event.preventDefault();
 
+        // Makes sure there is a valid budget
+        if (Number(formData.budget) <= 0) {
+            alert("Please enter a valid budget.");
+            return;
+        }
         // make sure form is filled out
         if (formData.location && formData.budget && formData.depart && formData.ret) {
 
@@ -38,11 +43,6 @@ const AddRequestForm = ({ addRequest }) => {
 
             // reset form after submitted
             setFormData({ location: '', budget: '', depart: '', ret: '' });
-
-            if (Number(budget) <= 0) {
-                alert("Please enter a valid budget.");
-                return;
-            }
         }
     };
 

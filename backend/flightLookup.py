@@ -32,7 +32,8 @@ def lookupRequest(airportCode: str, max_price: int, depart: str, ret: str):
                     "airline": item.get("airline"),
                     "duration_minutes": item.get("flight_duration"),
                     "stops": item.get("number_of_stops"),
-                    "origin": airportCode
+                    "origin": airportCode,
+                    "flight_link": item.get("link")
                 }
                 flight_results.append(destination)
     
@@ -52,6 +53,8 @@ def hotelSearch(destination: str, max_price: int, depart: int, ret: int):
         "check_out_date": ret,
         "currency": "USD",
         "max_price": max_price,
+        # filter out different types of hotels https://serpapi.com/google-hotels-property-types
+        "property_types": (12, 13, 15, 16, 17, 18, 19),
         #"sort_by": 8, # Can change sorting order or leave it out completely
                       # 3 - Lowest price | 8 - Highest rating | 13 - Most reviewed
     }
@@ -73,6 +76,7 @@ def hotelSearch(destination: str, max_price: int, depart: int, ret: int):
                     "link": prop.get("link"),
                     "lat" : prop.get("gps_coordinates").get("latitude"), 
                     "long" : prop.get("gps_coordinates").get("longitude"),
+                    "hotel_link": prop.get("link")
                 })
         return hotels
 
