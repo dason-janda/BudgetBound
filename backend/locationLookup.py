@@ -54,8 +54,8 @@ def getDrivingDestinations(startLocation: str):
                 candidates.append(city)
 
 
-        if len(candidates) > 30:
-            candidates = random.sample(candidates, 30)
+        if len(candidates) > 25:
+            candidates = random.sample(candidates, 25)
 
         endLocationsList = [f"{city['name']}, {city['adminName1']}" for city in candidates]
 
