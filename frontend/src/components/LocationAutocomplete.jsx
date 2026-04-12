@@ -9,12 +9,12 @@ const LocationAutocomplete = ({ location, setLocation }) => {
         setLocationRef.current = setLocation;
     }, [setLocation]);
 
-useEffect(() => {
+    useEffect(() => {
         let intervalId;
 
         const initializeAutocomplete = () => {
             if (containerRef.current) {
-                containerRef.current.innerHTML = ''; 
+                containerRef.current.innerHTML = '';
             }
 
             const placeAutocomplete = new window.google.maps.places.PlaceAutocompleteElement({
@@ -29,13 +29,13 @@ useEffect(() => {
 
             placeAutocomplete.addEventListener('gmp-select', async ({ placePrediction }) => {
                 if (!placePrediction) {
-                    setLocationRef.current(''); 
+                    setLocationRef.current('');
                     return;
                 }
 
                 const place = placePrediction.toPlace();
-                await place.fetchFields({ 
-                    fields: ['displayName', 'formattedAddress', 'addressComponents'] 
+                await place.fetchFields({
+                    fields: ['displayName', 'formattedAddress', 'addressComponents']
                 });
 
                 let city = '';
@@ -44,8 +44,8 @@ useEffect(() => {
                 if (place.addressComponents) {
                     for (const component of place.addressComponents) {
                         const types = component.types;
-                        if (types.includes('locality')) city = component.longText; 
-                        if (types.includes('administrative_area_level_1')) state = component.shortText; 
+                        if (types.includes('locality')) city = component.longText;
+                        if (types.includes('administrative_area_level_1')) state = component.shortText;
                     }
                 }
 
@@ -99,7 +99,7 @@ useEffect(() => {
                         box-sizing: border-box;
                         font-family: inherit;
                         font-size: 14px;
-                        background-color: #ffffff;=
+                        background-color: #ffffff;
                         color: #000000;            
                     }
                     gmp-place-autocomplete::part(input):focus {
